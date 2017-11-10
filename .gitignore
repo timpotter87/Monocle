@@ -97,9 +97,11 @@ config.py
 accounts*.csv
 banned.csv
 templates/footer.html
-templates/custom.html
-static/css/custom.css
-static/js/custom.js
+monocle/templates/custom.html
+monocle/static/css/custom.css
+monocle/static/js/custom.js
+old accounts/
+result.csv
 
 # script
 *pickle_landmarks.py
