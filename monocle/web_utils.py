@@ -140,7 +140,7 @@ def get_raid_markers(names=POKEMON, moves=MOVES):
             if fortsightings.team is None:
 		 gymTeam = 0
 	    else:
-                gymTeam = fortsighting.team
+                 gymTeam = fortsighting.team
             markers.append({
                 'id': 'raid-' + str(raid.id),
                 'level': raid.level,
