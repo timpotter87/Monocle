@@ -137,10 +137,10 @@ def get_raid_markers(names=POKEMON, moves=MOVES):
                 .filter(FortSighting.fort_id == fort.id) \
                 .order_by(FortSighting.last_modified.desc()) \
                 .first()
-            if fortsightings.team is None:
-		 gymTeam = 0
-	    else:
-                 gymTeam = fortsighting.team
+            #if fortsightings.team is None:
+            gymTeam = 0
+            #else:
+                #gymTeam = fortsighting.team
             markers.append({
                 'id': 'raid-' + str(raid.id),
                 'level': raid.level,
