@@ -48,6 +48,10 @@ GRID = (4, 4)  # rows, columns
 #
 ### For example, if you want to have 5% level 30 acccounts for encounter, set
 #LV30_PERCENT_OF_WORKERS = 0.05
+
+### This will use 7 level 30, adjust to your needs
+#LV30_PERCENT_OF_WORKERS = float(7 / (GRID[0] * GRID[1]) - 0.001) 
+
 #
 ### Delay in seconds before starting next encounter.
 ### This allows adjustment of overall encounter rate (to make it slower).
@@ -65,14 +69,13 @@ GRID = (4, 4)  # rows, columns
 ### Do GMO requests for lv30 accounts.
 ### Setting False will increase encounter rate and reduce hashing usage as it will apply insta-teleport encounter.
 ### Setting True will reduce account ban risks as it will apply normal Monocle behavior.
-### Default True.
-#LV30_GMO = True
+### Default False.
+#LV30_GMO = False
 
 ### Maximum speed for lv30 accounts in SPEED_UNIT/hr.
-### Defaults to 745.6454 miles/hr (1200 km/hr) hypothetical hyperloop speed.
-### Set it to 0.0 to disable.
+### Default is 0.0 to disable.
 ### When disabled, worker will not take any traveling time to encounter. (insta-teleport activated!)
-#LV30_MAX_SPEED = 745.6454
+#LV30_MAX_SPEED = 0.0
 
 ### If encounter jobs queue up more than this amount, new sightings will be saved without encounter.
 ### Defaults to 0, which means no max limit.
@@ -90,21 +93,23 @@ MAP_END = (40.7143, -111.8046)
 
 # ensure that you visit within this many meters of every part of your map during bootstrap
 # lower values are more thorough but will take longer
-BOOTSTRAP_RADIUS = 120
+BOOTSTRAP_RADIUS = 70
 
-GIVE_UP_KNOWN = 75   # try to find a worker for a known spawn for this many seconds before giving up
-GIVE_UP_UNKNOWN = 60 # try to find a worker for an unknown point for this many seconds before giving up
-SKIP_SPAWN = 90      # don't even try to find a worker for a spawn if the spawn time was more than this many seconds ago
+GIVE_UP_KNOWN = 300   # try to find a worker for a known spawn for this many seconds before giving up
+GIVE_UP_UNKNOWN = 1500 # try to find a worker for an unknown point for this many seconds before giving up
+SKIP_SPAWN = 1500      # don't even try to find a worker for a spawn if the spawn time was more than this many seconds ago
 
 # How often should the mystery queue be reloaded (default 90s)
 # this will reduce the grouping of workers around the last few mysteries
 #RESCAN_UNKNOWN = 90
 
+### Import Accounts directly into your database with
+### 'python3 scripts/import_accounts.py account.csv' for level 30 Accounts add '--level 30'
 # filename of accounts CSV
-ACCOUNTS_CSV = 'accounts.csv'
+#ACCOUNTS_CSV = 'accounts.csv'
 
 ### Swap out accounts on warning popup
-#ACCOUNTS_SWAP_OUT_ON_WARN = True
+#ACCOUNTS_SWAP_OUT_ON_WARN = False
 #
 ### Set period for account hibernation.
 ### For hibernation to work, set up cron for cleanup.py. See wiki for details.
