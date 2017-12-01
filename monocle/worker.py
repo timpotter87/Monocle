@@ -255,7 +255,7 @@ class Worker:
             raise err
 
         self.error_code = '°'
-        version = 8302
+        version = 8300
         async with self.sim_semaphore:
             self.error_code = 'APP SIMULATION'
             if conf.APP_SIMULATION:
