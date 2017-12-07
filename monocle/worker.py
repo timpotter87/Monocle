@@ -109,6 +109,7 @@ class Worker:
         self.captcha_queue = captcha_queue
         self.worker_dict = worker_dict
         self.account_dict = account_dict
+        
         # account information
         try:
             self.account = self.account_queue.get_nowait()
@@ -208,14 +209,15 @@ class Worker:
 
     def swap_proxy(self):
         proxy = self.api.proxy
-        while proxy == self.api.proxy:
-            self.api.proxy = next(self.proxies)
+        self.api.proxy = next(self.proxies)
 
     async def login(self, reauth=False):
         """Logs worker in and prepares for scanning"""
         self.log.info('Trying to log in {}', self.username)
 
         for attempt in range(-1, conf.MAX_RETRIES):
+            if not self.overseer.running:
+                raise OverseerNotRunningException("During login attempt.")
             try:
                 self.error_code = '»'
                 async with self.login_semaphore:
@@ -270,7 +272,7 @@ class Worker:
         request = self.api.create_request()
         request.get_player(player_locale=conf.PLAYER_LOCALE)
 
-        responses = await self.call(request, chain=False)
+        responses = await self.call(request, settings=False, chain=False)
 
         tutorial_state = None
         try:
@@ -354,7 +356,7 @@ class Worker:
 
         # empty request
         request = self.api.create_request()
-        await self.call(request, chain=False)
+        await self.call(request, settings=False, chain=False)
         await self.random_sleep(.43, .97)
 
         # request 1: get_player
@@ -446,7 +448,7 @@ class Worker:
 
             request = self.api.create_request()
             request.get_store_items()
-            await self.call(request, chain=False)
+            await self.call(request, settings=False, chain=False)
             await self.random_sleep(.43, .97)
 
             self.log.info('{} finished RPC login sequence (iOS app simulation)', self.username)
@@ -562,7 +564,7 @@ class Worker:
 
     async def call(self, request, chain=True, buddy=True, settings=True, inbox=True, dl_hash=True, action=None):
         if chain:
-            # request.check_challenge()
+            # request.check_challenge() # not used anymore
             request.get_hatched_eggs()
             request.get_inventory(last_timestamp_ms=self.inventory_timestamp)
             request.check_awarded_badges()
@@ -588,6 +590,8 @@ class Worker:
         err = None
         for attempt in range(-1, conf.MAX_RETRIES):
             try:
+                if not self.overseer.running:
+                    raise OverseerNotRunningException("During RPC call attempt.")
                 responses = await request.call()
                 self.last_request = time()
                 err = None
@@ -728,7 +732,7 @@ class Worker:
         for _ in range(3):
             if await self.visit(point, bootstrap=True):
                 return True
-            self.error_code = '∞'
+            self.error_code = '8'
             self.simulate_jitter(0.00005)
         return False
 
@@ -742,7 +746,7 @@ class Worker:
         while self.overseer.running and not self.account:
             self.error_code = 'D'
             self.log.warning("No account being set for visit. Probably due to insufficient accounts. Retrying in 30s.")
-            await sleep(10, loop=LOOP)
+            await self.random_sleep(10.0, 60.0)
             if Account.estimated_extra_accounts() > 0:
                 await self.new_account()
 
@@ -801,7 +805,7 @@ class Worker:
             self.log.warning('Temp disabled error on {}: {}', self.username, e)
             self.error_code = 'TEMP DISABLED'
             await sleep(3, loop=LOOP)
-            await self.remove_account(flag='temp_disabled')
+            await self.remove_account(flag='tempdisabled')
         except EmailUnverifiedException as e:
             self.log.warning('Email verification error on {}: {}', self.username, e)
             self.error_code = 'UNVERIFIED'
@@ -823,10 +827,6 @@ class Worker:
             self.error_code = 'HASHING BAN'
             self.log.error('Temporarily banned from hashing server for using invalid keys.')
             await sleep(185, loop=LOOP)
-        except ex.WarnAccountException:
-            self.error_code = 'WARN'
-            await sleep(1, loop=LOOP)
-            await self.remove_account(flag='warn')
         except ex.BannedAccountException:
             self.error_code = 'BANNED'
             await sleep(1, loop=LOOP)
@@ -858,10 +858,23 @@ class Worker:
             self.log.warning('{}. Giving up.', e)
         except ex.ServerBusyOrOfflineException as e:
             self.log.warning('{} Giving up.', e)
-        except ex.BadRPCException:
-            self.error_code = 'BAD REQUEST CODE3'
+        except (ex.BadRPCException, ex.WarnAccountException) as e:
+            if isinstance(e, ex.BadRPCException):
+                self.error_code = '3'
+                flag = 'code3'
+            else:
+                self.error_code = 'WARN'
+                flag = 'warn'
             await sleep(1, loop=LOOP)
-            await self.remove_account(flag='code3')
+            key = "{}_count".format(flag)
+            flag_count = (self.account.get(key) or 0)
+            flag_count += 1
+            self.account[key] = flag_count
+            self.log.warning("{} received {} {}(s).", self.username, flag_count, flag)
+            if flag_count >= 3:
+                await self.remove_account(flag=flag)
+            else:
+                await self.swap_account(reason="of {} {}(s)".format(flag_count, flag))
         except ex.InvalidRPCException as e:
             self.log.warning('{} Giving up.', e)
         except ex.ExpiredHashKeyException as e:
@@ -884,6 +897,8 @@ class Worker:
             self.error_code = 'AIOPOGO ERROR'
         except CancelledError:
             self.log.warning('Visit cancelled.')
+        except OverseerNotRunningException as e:
+            self.log.warning('Overseer stopped: {}', e)
         except Exception as e:
             self.log.exception('A wild {} appeared!', e.__class__.__name__)
             self.error_code = 'EXCEPTION'
@@ -894,7 +909,7 @@ class Worker:
             more_points=conf.MORE_POINTS, encounter_id=None, gym=None):
         self.handle.cancel()
         gmo_success = False
-        self.error_code = '∞' if bootstrap else '!'
+        self.error_code = '8' if bootstrap else '!'
 
         self.log.info('{0} is visiting {1[0]:.4f}, {1[1]:.4f}', self.username, point)
         start = time()
@@ -974,7 +989,7 @@ class Worker:
                         continue
                 
                 # Check against insert list
-                sp_discovered = ('despawn' in normalized)
+                sp_discovered = (normalized.get('despawn') is not None)
                 is_in_insert_blacklist = (conf.NO_DB_INSERT_IDS is not None and 
                         normalized['pokemon_id'] in conf.NO_DB_INSERT_IDS)
                 skip_insert = (sp_discovered and is_in_insert_blacklist)
@@ -990,7 +1005,7 @@ class Worker:
                 should_delegate_encounter = (conf.LV30_PERCENT_OF_WORKERS > 0.0 and
                         (not self.player_level or self.player_level < 30))
                 should_notify = self.should_notify(normalized)
-                should_encounter = self.should_encounter(normalized, should_notify=should_notify)
+                should_encounter = (sp_discovered and self.should_encounter(normalized, should_notify=should_notify))
                     
                 if encounter_id:
                     cache = self.overseer.ENCOUNTER_CACHE if should_encounter else SIGHTING_CACHE
@@ -1110,13 +1125,16 @@ class Worker:
                     if should_update_gym:
                         db_proc.add(normalized_fort)
 
+                        if conf.NOTIFY_GYMS_WEBHOOK:
+                            LOOP.create_task(self.notifier.webhook_gym(gym))
+
                     if fort.HasField('raid_info'):
                         if fort not in RAID_CACHE:
                             normalized_raid = self.normalize_raid(fort)
                             RAID_CACHE.add(normalized_raid)
                             if normalized_raid['time_end'] > int(time()):
                                 if conf.NOTIFY_RAIDS:
-                                    LOOP.create_task(self.notifier.notify_raid(fort))
+                                    LOOP.create_task(self.notifier.notify_raid(normalized_raid, normalized_fort))
                                 if conf.NOTIFY_RAIDS_WEBHOOK:
                                     LOOP.create_task(self.notifier.webhook_raid(normalized_raid, normalized_fort))
                             db_proc.add(normalized_raid)
@@ -1271,8 +1289,7 @@ class Worker:
                 or (encounter_conf == 'some'
                     and sighting['pokemon_id'] in conf.ENCOUNTER_IDS))
         should_notify_with_iv = (should_notify and not conf.IGNORE_IVS)
-        sp_discovered = ('despawn' in sighting)
-        return (sp_discovered and (encounter_whitelisted or should_notify_with_iv))
+        return (encounter_whitelisted or should_notify_with_iv)
 
     async def pgscout(self, session, pokemon, spawn_id):
         PGScout_address=next(self.PGScout_cycle)
@@ -1351,6 +1368,7 @@ class Worker:
                 self.log.error('Unknown error: in gym_get_info: {}',e)
 
         elif result == 2:
+            distance = get_distance(self.location, (gym['lat'], gym['lon']))
             self.log.info('The server said {} was out of gym details range. {:.1f}m {:.1f}{}',
                 name, distance, self.speed, UNIT_STRING)
 
@@ -1669,40 +1687,48 @@ class Worker:
             ACCOUNTS[self.username] = self.account
 
     async def remove_account(self, flag='banned'):
+        log_message = ''
+        send_webhook = True
         self.error_code = 'REMOVING'
         if flag == 'warn':
             self.account['warn'] = True
-            self.log.warning('Hibernating {} due to warn.', self.username)
+            log_message = "Hibernating {} due to warn. Level - {}".format(self.username, self.player_level)
         elif flag == 'sbanned':
             self.account['sbanned'] = True
-            self.log.warning('Hibernating {} due to shadow ban.', self.username)
+            log_message = "Hibernating {} due to shadow ban. Level - {}".format(self.username, self.player_level)
         elif flag == 'code3':
             self.account['code3'] = True
-            self.log.warning('Hibernating {} due to code3.', self.username)
+            log_message = "Hibernating {} due to code3. Level - {}".format(self.username, self.player_level)
         elif flag == 'credentials':
             self.account['credentials'] = True
-            self.log.warning('Removing {} due to wrong credentials.', self.username)
+            log_message = "Removing {} due to wrong credentials. Level - {}".format(self.username, self.player_level)
         elif flag == 'unverified':
             self.account['unverified'] = True
-            self.log.warning('Removing {} due to unverified email.', self.username)
+            log_message = "Removing {} due to unverified email.. Level - {}".format(self.username, self.player_level)
         elif flag == 'security':
             self.account['security'] = True
-            self.log.warning('Removing {} due to security lock.', self.username)
-        elif flag == 'temp_disabled':
-            self.account['temp_disabled'] = True
-            self.log.warning('Removing {} due to temp disabled.', self.username)
+            log_message = "Removing {} due to security lock. Level - {}".format(self.username, self.player_level)
+        elif flag == 'tempdisabled':
+            self.account['tempdisabled'] = True
+            log_message = "Removing {} due to temp disabled. Level - {}".format(self.username, self.player_level)
         elif flag == 'level30':
             self.account['graduated'] = True
-            self.log.warning('Removing {} from slave pool due to graduation to Lv.30.', self.username)
+            log_message = "Removing {} from slave pool due to graduation to Lv.30. Level - {}".format(self.username, self.player_level)
+            send_webhook = False
         elif flag == 'level1':
             self.account['demoted'] = True
-            self.log.warning('Removing {} from captain pool due to insufficient level.', self.username)
+            log_message = "Removing {} from captain pool due to insufficient level. Level - {}".format(self.username, self.player_level)
+            send_webhook = False
         else:
             self.account['banned'] = True
-            self.log.warning('Hibernating {} due to ban.', self.username)
+            log_message = "Hibernating {} due to ban.".format(self.username, self.player_level)
+            
+        self.log.warning(log_message)            
+        LOOP.create_task(self.notifier.hibernate_webhook(self.username, self.player_level, log_message))
+        
         await self.update_accounts_dict()
         self.username = None
-        self.account = None
+        self.account = None      
         await self.new_account(after_remove=True)
 
     async def bench_account(self):
@@ -1883,6 +1909,7 @@ class Worker:
             'lon': raw.longitude,
             'team': raw.owned_by_team,
             'guard_pokemon_id': raw.guard_pokemon_id,
+            'sponsor': raw.sponsor,
             'last_modified': raw.last_modified_timestamp_ms // 1000,
             'is_in_battle': raw.is_in_battle,
             'slots_available': raw.gym_display.slots_available,
@@ -2001,3 +2028,8 @@ class CaptchaException(Exception):
 
 class CaptchaSolveException(Exception):
     """Raised when solving a CAPTCHA has failed."""
+
+class OverseerNotRunningException(Exception):
+    """Raised when overseer is no longer running."""
+    pass
+

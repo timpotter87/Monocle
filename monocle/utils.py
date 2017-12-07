@@ -179,7 +179,6 @@ def generate_device_info(account):
 
     return account
 
-
 def get_current_hour(now=None, _time=time):
     now = now or _time()
     return round(now - (now % 3600))
@@ -247,3 +246,26 @@ def calc_pokemon_level(cp_multiplier):
         pokemon_level = 171.0112688 * cp_multiplier - 95.20425243
     pokemon_level = int((round(pokemon_level) * 2) / 2)
     return pokemon_level
+
+
+def get_static_map_url(lat, lon, icon=None):
+        center = '{},{}'.format(lat, lon)
+        query_center = 'center={}'.format(center)
+        query_markers = 'markers=color:red%7C{}'.format(center)
+        query_size = 'size={}x{}'.format('250', '125')
+        query_zoom = 'zoom={}'.format('15')
+        query_maptype = 'maptype={}'.format('roadmap')
+
+        if icon is not None:
+            query_markers = 'markers=icon:{icon_url}%7C{lat},{lon}'.format(
+                icon_url = icon,
+                lat = lat,
+                lon = lon)
+
+        url = ('https://maps.googleapis.com/maps/api/staticmap?' +
+                query_center + '&' + query_markers + '&' +
+                query_maptype + '&' + query_size + '&' + query_zoom)
+        return url
+
+def get_gmaps_link(lat, lon):
+    return "http://maps.google.com/maps?q={},{}".format(lat, lon)

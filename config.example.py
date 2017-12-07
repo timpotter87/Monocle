@@ -111,9 +111,17 @@ SKIP_SPAWN = 1500      # don't even try to find a worker for a spawn if the spaw
 ### Swap out accounts on warning popup
 #ACCOUNTS_SWAP_OUT_ON_WARN = False
 #
-### Set period for account hibernation.
+### Set period (days) for account hibernations for each swap out category.
+### Only those categories defined here will be swapped in. The rest will not attempt to swapin.
 ### For hibernation to work, set up cron for cleanup.py. See wiki for details.
-#ACCOUNTS_HIBERNATE_DAYS = 7.0
+### Default is the following.
+#ACCOUNTS_HIBERNATE_CONFIG = {
+#    'banned': 7.0,                     # Perma banned, we'd never know
+#    'warn': 7.0,                       # Warned, mostly equal to code3
+#    'sbanned': 7.0,                    # Shadow banned, will turn to warn/code3 in 3-5 days
+#    'code3': 7.0,                      # Temp banned, might be good again in 2-4 weeks
+#    'tempdisabled': 0.02083333333,     # 30 mins. Something was messed up and login has been temp disabled for 15 mins.
+#}
 
 # the directory that the pickles folder, socket, CSV, etc. will go in
 # defaults to working directory if not set
@@ -152,11 +160,6 @@ SEARCH_SLEEP = 2.5
 
 # key for Bossland's hashing server, needed if you're not using Go Hash.
 #HASH_KEY = '9d87af14461b93cb3605'  # this key is fake
-
-#GO_HASH = False
-
-# key for Go Hash a new hashing service that acts as a hash surge buffer on top of Bosslands hash server with a pay per hash model. Needed if you're not using a key direct from Bossland
-#GO_HASH_KEY = 'PH7B03W1LSD4S2LHY8UH' # this is a fake key
 
 ### Optional conguration for hash server.
 ### Do not mess with the following hash configs if you don't know what you are doing.
@@ -248,7 +251,7 @@ MAX_RETRIES = 3
 LOGIN_TIMEOUT = 2.5
 
 # add spawn points reported in cell_ids to the unknown spawns list
-#MORE_POINTS = False 
+#MORE_POINTS = False
 
 # Set to True to kill the scanner when a newer version is forced
 #FORCED_KILL = False
@@ -352,6 +355,9 @@ SHOW_TIMER_RAIDS = True  # Show remaining time on a label under each raid marker
 ### OPTIONS BELOW THIS POINT ARE ONLY NECESSARY FOR NOTIFICATIONS ###
 NOTIFY = False  # enable notifications
 
+# notify gyms data updates to webhooks
+#NOTIFY_GYMS_WEBHOOK = False
+
 # create images with Pokémon image and optionally include IVs and moves
 # requires cairo and ENCOUNTER = 'notifying' or 'all'
 TWEET_IMAGES = True
@@ -384,6 +390,71 @@ ALWAYS_NOTIFY = 14
 
 # Never notify about the following Pokémon, even if they would otherwise be eligible
 #NEVER_NOTIFY_IDS = TRASH_IDS
+
+
+#######################################################
+## NOTIFY POKEMON
+##
+## If some values are left out,
+## Monocle uses the values of DEFAULT_ALARM
+##
+## So either set all values or delete the '#' signs
+## infront of the DEFAULT_ALARM lines
+#######################################################
+
+# copyright safe icons:
+#ICONS_URL = "https://raw.githubusercontent.com/M4d40/my-po-icons/master/Copyrightfree-Assets/{}.png"
+#GMAP_ICONS_URL = "https://raw.githubusercontent.com/M4d40/my-po-icons/master/Copyrightfree-Assets-32x32/{}.png"
+#GMAP_EGG_ICONS_URL = "https://raw.githubusercontent.com/M4d40/my-po-icons/master/Copyrightfree-Assets-32x32/egg_{}.png"
+
+# non copyright safe icons:
+#ICONS_URL = "https://raw.githubusercontent.com/M4d40/my-po-icons/master/Original-Assets/{}.png"
+#GMAP_ICONS_URL = "https://raw.githubusercontent.com/M4d40/my-po-icons/master/Original-Assets-32x32/{}.png"
+#GMAP_EGG_ICONS_URL = "https://raw.githubusercontent.com/M4d40/my-po-icons/master/Original-Assets-32x32/egg_{}.png"
+
+
+#DEFAULT_ALARM = {
+#            'username': '{poke_name}',
+#            'title': 'A wild {poke_name} {poke_iv}% (lvl {poke_lvl} | {poke_cp}WP) ({poke_atk}/{poke_def}/{poke_sta}) appeared',
+#            'description': """Until {disappear_time} ({time_left} left)
+#IV: {poke_iv}% ({poke_atk}/{poke_def}/{poke_sta})
+#CP: {poke_cp}  |  Level: {poke_lvl}
+#Attacks: {poke_move_1} / {poke_move_2}
+#Gender: {poke_gender} | Weight: {poke_weight} kg | Height: {poke_height} m""",
+#            'color': 'BLUE', # RED/AQUA/GREEN/BLUE/GOLD/ORANGE/RED/GREY/NAVY
+#            'avatar_url': ICONS_URL,
+#            'icon_url': ICONS_URL
+#}
+
+#NOTIFY_POKEMON_ALARMS = {
+#    'discord': [
+#        {
+#            'name': 'filter pokemon ids',
+#            'title': 'A wild {poke_name} {poke_iv}% (lvl {poke_lvl} | {poke_cp}WP) ({poke_atk}/{poke_def}/{poke_sta}) appeared',
+#            'description': """Until {disappear_time} ({time_left} left)""",
+#            'filter_ids': [1,2,3,4,5,6,8,9,246,247,248],
+#            'webhook_url': 'YOUR DISCORDCHANNEL WEBHOOK',
+#            'avatar_url': ICONS_URL,
+#            'icon_url': ICONS_URL
+#        },
+#        {
+#            'name': 'filter pokemon ivs',
+#            'username': 'iv-95-bot',
+#            'filter_ivs': {'value': 95, 'op': '>=', 'ignore_unknown': True},
+#            'webhook_url': 'YOUR DISCORDCHANNEL WEBHOOK',
+#        },
+#        {
+#            'name': 'combined filter ivs and ids',
+#            'username': 'iv-95-bot',
+#            'filter_ids': [1,2,3,4,5,6,8,9,246,247,248],
+#            'filter_ivs': {'value': 95, 'op': '>=', 'ignore_unknown': True},
+#            'webhook_url': 'YOUR DISCORDCHANNEL WEBHOOK',
+#            'color': 'RED',
+#        }
+#    ]
+#}
+
+
 
 # Override the rarity score for particular Pokémon
 # format is: {pokemon_id: rarity_score}
@@ -430,16 +501,36 @@ MINIMUM_SCORE = 0.4  # the required score after FULL_TIME seconds have passed
 #TELEGRAM_MESSAGE_TYPE = 0
 
 ### The following raid notification related configs
-### only apply to Chrale's version of raids notification (no webhook support, only Telegram and Discord)
+### only apply to Monkey's version of raids notification (no webhook support, only Telegram and Discord)
 ### For webhook raids notification, see below for NOTIFY_RAIDS_WEBHOOK
 ###
 #NOTIFY_RAIDS = False # Enable raid notifications. Default False
 #RAIDS_LVL_MIN = 1
 #RAIDS_IDS = {143, 248}
-#RAIDS_DISCORD_URL = "https://discordapp.com/api/webhooks/xxxxxxxxxxxx/xxxxxxxxxxxx"
-#TELEGRAM_RAIDS_CHAT_ID = '@your_channel'
 
-#ICONS_URL = "https://raw.githubusercontent.com/ZeChrales/monocle-icons/larger-outlined/larger-icons/{}.png"
+#DEFAULT_EGG_ALARM = {
+#            'username': 'Egg Bot',
+#            'title': 'A Level {level} Egg appeared',
+#            'description': """It hatches at {time_battle}
+#Raid ends at: {raid_end}""",
+#            'color': 'GREY', # RED/AQUA/GREEN/BLUE/GOLD/ORANGE/RED/GREY/NAVY
+#            'webhook_url': 'https://discordapp.com/api/webhooks/xxxxxxxxxxxxx/xxxxxxxxxxxxxxx'
+#}
+
+#DEFAULT_RAID_ALARM = {
+#            'username': 'Raid Bot',
+#            'title': 'A {poke_name} Raid (Level {level}) hetched',
+#            'description': """Gym: {gym_name}
+#Until: {raid_end}
+#controlled by: **Team {team}**
+#Pokemon: **{poke_name}**
+#Attacks: **{move_1}** / **{move_2}**
+#Gym-pic: {gym_pic}""",
+#            'color': 'BLUE', # RED/AQUA/GREEN/BLUE/GOLD/ORANGE/RED/GREY/NAVY
+#            'webhook_url': 'https://discordapp.com/api/webhooks/xxxxxxxxxxxxx/xxxxxxxxxxxxxxx'
+#}
+
+#TELEGRAM_RAIDS_CHAT_ID = '@your_channel'
 
 #WEBHOOKS = {'http://127.0.0.1:4000'}
 
@@ -455,7 +546,8 @@ MINIMUM_SCORE = 0.4  # the required score after FULL_TIME seconds have passed
 ##   "raid_begin", "raid_battle", "raid_end",
 ##   "gym_id", "base64_gym_id", "gym_name", "gym_url"
 ##
-## For PokeAlarm, no config is needed since it is supported out of the box.
+## For PokeAlarm, no raid webhook config is needed since it is supported out of the box
+## Note that you must set NOTIFY_GYMS_WEBHOOK to True in config in order to obtain gym names from PokeAlarm.
 #
 #WEBHOOK_RAID_MAPPING = {}
 #
@@ -518,7 +610,8 @@ MINIMUM_SCORE = 0.4  # the required score after FULL_TIME seconds have passed
 #SB_MAX_ENC_MISS = 3           # Number of encounter misses before account is marked as sbanned
 #SB_MIN_SIGHTING_COUNT = 30    # Minimum sightings required to flag SB
 #SB_QUARANTINE_VISITS = 12     # Number of mininum visits needed to check if an account has seen any uncommon
-#SB_WEBHOOK = None             # Define webhook end point for SB. Payload is Discord type.
+#HIBERNATE_WEBHOOK = None             # Define webhook end point for Hibernation notifications. Payload is Discord type.
+#HIBERNATE_WEBHOOK_MIN_LEVEL = 1      # Minimum level to notify to Hibernate webhook
 
 ####
 ### PgScout (Credit to Avatar690)
@@ -563,7 +656,6 @@ MINIMUM_SCORE = 0.4  # the required score after FULL_TIME seconds have passed
 ## Table specific cleanup times. Set -1.0 to disable
 # CLEANUP_RAIDS_OLDER_THAN_X_HR = 6.0
 # CLEANUP_SIGHTINGS_OLDER_THAN_X_HR = 6.0
-# CLEANUP_SPAWNPOINTS_OLDER_THAN_X_HR = 24.0
 # CLEANUP_FORT_SIGHTINGS_OLDER_THAN_X_HR = 6.0
 # CLEANUP_MYSTERY_SIGHTINGS_OLDER_THAN_X_HR = 24.0
 

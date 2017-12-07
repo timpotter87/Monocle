@@ -120,13 +120,13 @@ class SightingCache:
         with session_scope() as session:
             sightings = session.query(Sighting) \
                 .join(Sighting.spawnpoint) \
-                .filter(Sighting.expire_timestamp >= time()) \
+                .filter(Sighting.expire_timestamp >= int(time())) \
                 .filter(Spawnpoint.lat.between(bounds.south, bounds.north),
                         Spawnpoint.lon.between(bounds.west, bounds.east))
 
             sightings_lured = session.query(Sighting) \
                 .filter(Sighting.spawn_id == 0) \
-                .filter(Sighting.expire_timestamp >= time()) \
+                .filter(Sighting.expire_timestamp >= int(time())) \
                 .filter(Sighting.lat.between(bounds.south, bounds.north),
                         Sighting.lon.between(bounds.west, bounds.east))
 
@@ -228,7 +228,7 @@ class RaidCache:
             raids = session.query(Raid) \
                 .options(eagerload(Raid.fort)) \
                 .join(Fort, Fort.id == Raid.fort_id) \
-                .filter(Raid.time_end > time()) \
+                .filter(Raid.time_end > int(time())) \
                 .filter(Fort.lat.between(bounds.south, bounds.north),
                         Fort.lon.between(bounds.west, bounds.east))
             for raid in raids:
@@ -252,6 +252,7 @@ class FortCache:
         self.gym_names = {}
         self.pokestops = {}
         self.pokestop_names = {}
+        self.sponsors = {}
         self.class_version = 2.1
 
     def __len__(self):
@@ -293,6 +294,7 @@ class FortCache:
                 fort = fort_sighting.fort
                 external_id = fort.external_id
                 self.internal_ids[external_id] = fort_sighting.fort_id
+                self.sponsors[external_id] = fort.sponsor
                 if fort.name:
                     self.gym_names[external_id] = (fort.name, fort.url)
                 obj = {
@@ -449,6 +451,7 @@ class Fort(Base):
     lon = Column(FLOAT_TYPE)
     name = Column(String(128))
     url = Column(String(200))
+    sponsor = Column(SmallInteger)
 
     sightings = relationship(
         'FortSighting',
@@ -624,7 +627,7 @@ def add_gym_defenders(session, fort_internal_id, gym_defenders, raw_fort):
             battles_attacked=gym_defender['battles_attacked'],
             battles_defended=gym_defender['battles_defended'],
             num_upgrades=gym_defender['num_upgrades'],
-            created=round(time()),
+            created=int(time()),
         )
         team = raw_fort.get('team')
         if team is not None:
@@ -648,7 +651,7 @@ def add_spawnpoint(session, pokemon):
     existing = session.query(Spawnpoint) \
         .filter(Spawnpoint.spawn_id == spawn_id) \
         .first()
-    now = round(time())
+    now = int(time())
     point = pokemon['lat'], pokemon['lon']
     spawns.add_known(spawn_id, new_time, point)
     if existing:
@@ -766,6 +769,7 @@ def add_fort_sighting(session, raw_fort):
     # Check if fort exists
     external_id = raw_fort['external_id']
     internal_id = get_fort_internal_id(session, external_id)
+    sponsor = raw_fort.get('sponsor')
 
     fort_updated = False
 
@@ -776,11 +780,13 @@ def add_fort_sighting(session, raw_fort):
             lon=raw_fort['lon'],
             name=raw_fort.get('name'),
             url=raw_fort.get('url'),
+            sponsor=raw_fort.get('sponsor'),
         )
         session.add(fort)
         session.flush()
         internal_id = fort.id
         FORT_CACHE.internal_ids[external_id] = internal_id 
+        FORT_CACHE.sponsors[external_id] = sponsor
         fort_updated = True
 
     has_fort_name = ('name' in raw_fort and raw_fort['name'])
@@ -798,6 +804,12 @@ def add_fort_sighting(session, raw_fort):
                 external_id not in FORT_CACHE.gym_names or
                 FORT_CACHE.gym_names[external_id] == True)):
         FORT_CACHE.gym_names[external_id] = (raw_fort['name'], raw_fort['url']) 
+    
+    if sponsor != FORT_CACHE.sponsors.get(external_id):
+        session.query(Fort) \
+                .filter(Fort.id == internal_id) \
+                .update({'sponsor': sponsor})
+        FORT_CACHE.sponsors[external_id] = sponsor
     
     if 'gym_defenders' in raw_fort and len(raw_fort['gym_defenders']) > 0:
         add_gym_defenders(session, internal_id, raw_fort['gym_defenders'], raw_fort)
@@ -929,12 +941,14 @@ def update_failures(session, spawn_id, success, allowed=conf.FAILURES_ALLOWED):
             elif conf.SB_DETECTOR:
                 session.delete(spawnpoint)
                 spawns.remove_known(spawn_id)
+                session.commit()
                 log.warning('{} consecutive failures on {}, deleted.', allowed + 1, spawn_id)
                 return
             else:
                 spawnpoint.updated = 0
                 spawnpoint.failures = 0
                 spawns.remove_known(spawn_id)
+                session.commit()
                 log.warning('{} consecutive failures on {}, will treat as an unknown from now on.', allowed + 1, spawn_id)
                 return
         else:
@@ -943,6 +957,7 @@ def update_failures(session, spawn_id, success, allowed=conf.FAILURES_ALLOWED):
     except TypeError:
         spawnpoint.failures = 1
         spawns.failures[spawn_id] = spawnpoint.failures
+    session.commit()
 
 
 def update_mystery(session, mystery):
@@ -973,6 +988,7 @@ def _get_forts_sqlite(session):
             f.lat,
             f.lon,
             f.name,
+            f.url,
             fs.slots_available
         FROM fort_sightings fs
         JOIN forts f ON f.id=fs.fort_id
@@ -995,6 +1011,7 @@ def _get_forts(session):
             f.lat,
             f.lon,
             f.name,
+            f.url,
             fs.slots_available
         FROM fort_sightings fs
         JOIN forts f ON f.id=fs.fort_id
