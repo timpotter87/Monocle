@@ -8,6 +8,7 @@ from sys import exit
 from math import ceil
 from distutils.version import StrictVersion
 from functools import lru_cache
+from s2sphere import CellId as S2CellId
 
 from aiohttp import ClientSession
 from aiopogo import PGoApi, HashServer, json_loads, exceptions as ex
@@ -23,6 +24,7 @@ from .accounts import Account, get_accounts, InsufficientAccountsException, Logi
         EmailUnverifiedException, SecurityLockException, TempDisabledException
 from . import altitudes, avatar, bounds, db_proc, spawns, sanitized as conf
 from .notification import Notifier
+from .weather import WEATHER_CACHE, Weather
 
 from python_anticaptcha import AnticaptchaClient, NoCaptchaTaskProxylessTask
 from python_anticaptcha.exceptions import AnticatpchaException
@@ -66,6 +68,7 @@ class Worker:
     has_raiders = (conf.RAIDERS_PER_GYM and conf.RAIDERS_PER_GYM > 0)
     scan_gym = conf.GYM_NAMES or conf.GYM_DEFENDERS
     passive_scan_gym = (scan_gym and not has_raiders)
+    log = get_logger("worker")
 
     if conf.CACHE_CELLS:
         cells = load_pickle('cells') or {}
@@ -257,7 +260,7 @@ class Worker:
             raise err
 
         self.error_code = '°'
-        version = 8500
+        version = 8700
         async with self.sim_semaphore:
             self.error_code = 'APP SIMULATION'
             if conf.APP_SIMULATION:
@@ -684,9 +687,9 @@ class Worker:
             else:
                 if (not dl_hash
                         and conf.FORCED_KILL
-                        and dl_settings.settings.minimum_client_version != '0.85.1'):
+                        and dl_settings.settings.minimum_client_version != '0.87.5'):
                     forced_version = StrictVersion(dl_settings.settings.minimum_client_version)
-                    if forced_version > StrictVersion('0.85.1'):
+                    if forced_version > StrictVersion('0.87.5'):
                         err = '{} is being forced, exiting.'.format(forced_version)
                         self.log.error(err)
                         print(err)
@@ -958,8 +961,15 @@ class Worker:
         if conf.ITEM_LIMITS and self.bag_items >= self.item_capacity:
             await self.clean_bag()
 
+        if map_objects.client_weather:
+            for w in map_objects.client_weather:
+                weather = Weather.normalize_weather(w, map_objects.time_of_day)
+                if weather not in WEATHER_CACHE:
+                    db_proc.add(weather)
+
         for map_cell in map_objects.map_cells:
             request_time_ms = map_cell.current_timestamp_ms
+            cell_weather_id = S2CellId(map_cell.s2_cell_id).parent(10).id()
             for pokemon in map_cell.wild_pokemons:
                 pokemon_seen += 1
                 if not self.in_bounds(pokemon.latitude, pokemon.longitude):
@@ -967,6 +977,7 @@ class Worker:
 
                 normalized = self.normalize_pokemon(pokemon, username=self.username)
                 normalized['time_of_day'] = map_objects.time_of_day
+                normalized['weather_cell_id'] = cell_weather_id
                 seen_target = seen_target or normalized['spawn_id'] == spawn_id
                 seen_encounter = seen_encounter or normalized['encounter_id'] == encounter_id
 
@@ -1882,10 +1893,13 @@ class Worker:
         if raw.pokemon_data.pokemon_display:
             if raw.pokemon_data.pokemon_display.form:
                 norm['display'] = raw.pokemon_data.pokemon_display.form
+            if raw.pokemon_data.pokemon_display.weather_boosted_condition:
+                norm['weather_boosted_condition'] = raw.pokemon_data.pokemon_display.weather_boosted_condition
+
         return norm
 
-    @staticmethod
-    def normalize_lured(raw, now):
+    @classmethod
+    def normalize_lured(self, raw, now):
         lure = raw.lure_info
         return {
             'type': 'pokemon',

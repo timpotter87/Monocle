@@ -7,7 +7,7 @@
 ### All lines that are commented out (and some that aren't) are optional ###
 
 DB_ENGINE = 'sqlite:///db.sqlite'
-#DB_ENGINE = 'mysql://user:pass@localhost/monocle'
+#DB_ENGINE = 'mysql://user:pass@localhost/monocle?charset=utf8mb4'  ## don't forget ?charset=utf8mb4 after your DB name !
 #DB_ENGINE = 'postgresql://user:pass@localhost/monocle
 
 ### DB queue/pool size settings
@@ -116,10 +116,10 @@ SKIP_SPAWN = 1500      # don't even try to find a worker for a spawn if the spaw
 ### For hibernation to work, set up cron for cleanup.py. See wiki for details.
 ### Default is the following.
 #ACCOUNTS_HIBERNATE_CONFIG = {
-#    'banned': 7.0,                     # Perma banned, we'd never know
-#    'warn': 7.0,                       # Warned, mostly equal to code3
-#    'sbanned': 7.0,                    # Shadow banned, will turn to warn/code3 in 3-5 days
-#    'code3': 7.0,                      # Temp banned, might be good again in 2-4 weeks
+#    'banned': 45.0,                     # Perma banned, we'd never know
+#    'warn': 45.0,                       # Warned, mostly equal to code3
+#    'sbanned': 45.0,                    # Shadow banned, will turn to warn/code3 in 3-5 days
+#    'code3': 45.0,                      # Temp banned, might be good again in 2-4 weeks
 #    'tempdisabled': 0.02083333333,     # 30 mins. Something was messed up and login has been temp disabled for 15 mins.
 #}
 

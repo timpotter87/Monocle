@@ -40,9 +40,13 @@ elif conf.DB_ENGINE.startswith('postgres'):
         impl = Numeric
 
         def process_bind_param(self, value, dialect):
+            if value is None:
+                return None
             return int(value)
 
         def process_result_value(self, value, dialect):
+            if value is None:
+                return None
             return int(value)
 
         @property
@@ -316,6 +320,7 @@ class FortCache:
             log.info("Preloaded {} pokestops", len(self.pokestop_names))
 
 
+
 SIGHTING_CACHE = SightingCache()
 MYSTERY_CACHE = MysteryCache()
 FORT_CACHE = FortCache()
@@ -363,6 +368,9 @@ class Sighting(Base):
     cp = Column(SmallInteger)
     level = Column(SmallInteger)
     updated = Column(Integer,default=time,onupdate=time)
+    weather_boosted_condition = Column(SmallInteger)
+    weather_cell_id = Column(UNSIGNED_HUGE_TYPE)
+
 
     spawnpoint = relationship("Spawnpoint",
             uselist=False,
@@ -415,6 +423,9 @@ class Mystery(Base):
     form = Column(SmallInteger)
     cp = Column(SmallInteger)
     level = Column(SmallInteger)
+    weather_boosted_condition = Column(SmallInteger)
+    weather_cell_id = Column(UNSIGNED_HUGE_TYPE)
+
 
     __table_args__ = (
         UniqueConstraint(
@@ -590,6 +601,8 @@ def add_sighting(session, pokemon):
     sighting.form = pokemon.get('form', 0)
     sighting.cp = pokemon.get('cp')
     sighting.level = pokemon.get('level')
+    sighting.weather_boosted_condition = pokemon.get('weather_boosted_condition', 0)
+    sighting.weather_cell_id = pokemon.get('weather_cell_id')
 
     session.merge(sighting)
 
@@ -751,7 +764,9 @@ def add_mystery(session, pokemon):
         gender=pokemon.get('gender', 0),
         form=pokemon.get('form', 0),
         cp=pokemon.get('cp'),
-        level=pokemon.get('level')
+        level=pokemon.get('level'),
+        weather_boosted_condition=pokemon.get('weather_boosted_condition', 0),
+        weather_cell_id=pokemon.get('weather_cell_id')
     )
     session.add(obj)
 
