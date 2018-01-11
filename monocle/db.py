@@ -253,7 +253,7 @@ class FortCache:
     def __init__(self):
         self.gyms = {}
         self.internal_ids = {}
-        self.gym_names = {}
+        self.gym_info = {}
         self.pokestops = {}
         self.pokestop_names = {}
         self.sponsors = {}
@@ -263,21 +263,24 @@ class FortCache:
         return len(self.gyms)
 
     def add(self, fort):
-        self.gyms[fort['external_id']] = fort['last_modified']
+        self.gyms[fort['external_id']] = {'weather_cell_id': fort['weather_cell_id'], 'last_modified': fort['last_modified'] }
 
     def remove_gym(self, external_id):
         if external_id in self.gyms:
             del self.gyms[external_id]
         if external_id in self.internal_ids:
             del self.internal_ids[external_id]
-        if external_id in self.gym_names:
-            del self.gym_names[external_id]
+        if external_id in self.gym_info:
+            del self.gym_info[external_id]
 
     def __contains__(self, sighting):
         try:
             return self.gyms[sighting.id] == sighting.last_modified_timestamp_ms // 1000
         except KeyError:
             return False
+
+    def __getitem__(self, index):
+        return self.gyms[index]
 
     def pickle(self):
         state = self.__dict__.copy()
@@ -300,10 +303,11 @@ class FortCache:
                 self.internal_ids[external_id] = fort_sighting.fort_id
                 self.sponsors[external_id] = fort.sponsor
                 if fort.name:
-                    self.gym_names[external_id] = (fort.name, fort.url)
+                    self.gym_info[external_id] = (fort.name, fort.url, fort.sponsor)
                 obj = {
                     'external_id': fort_sighting.fort.external_id,
-                    'last_modified': fort_sighting.last_modified,
+                    'weather_cell_id': fort.weather_cell_id,
+                    'last_modified': fort_sighting.last_modified
                 }
                 self.add(obj)
             log.info("Preloaded {} fort_sightings ", len(self))
@@ -463,6 +467,7 @@ class Fort(Base):
     name = Column(String(128))
     url = Column(String(200))
     sponsor = Column(SmallInteger)
+    weather_cell_id = Column(UNSIGNED_HUGE_TYPE)
 
     sightings = relationship(
         'FortSighting',
@@ -796,6 +801,7 @@ def add_fort_sighting(session, raw_fort):
             name=raw_fort.get('name'),
             url=raw_fort.get('url'),
             sponsor=raw_fort.get('sponsor'),
+            weather_cell_id=raw_fort.get('weather_cell_id')
         )
         session.add(fort)
         session.flush()
@@ -804,9 +810,21 @@ def add_fort_sighting(session, raw_fort):
         FORT_CACHE.sponsors[external_id] = sponsor
         fort_updated = True
 
+    if external_id not in FORT_CACHE.gyms:
+        FORT_CACHE.add(raw_fort)
+      
+    if FORT_CACHE.gyms[external_id]['weather_cell_id'] is None and raw_fort.get('weather_cell_id'):
+        session.query(Fort) \
+            .filter(Fort.id == internal_id) \
+            .update({
+                'weather_cell_id': raw_fort.get('weather_cell_id')
+            })
+        FORT_CACHE.gyms[external_id]['weather_cell_id'] = raw_fort.get('weather_cell_id')
+        fort_updated = True
+
     has_fort_name = ('name' in raw_fort and raw_fort['name'])
 
-    if external_id not in FORT_CACHE.gym_names and has_fort_name:
+    if external_id not in FORT_CACHE.gym_info and has_fort_name:
         session.query(Fort) \
                 .filter(Fort.id == internal_id) \
                 .update({
@@ -816,9 +834,9 @@ def add_fort_sighting(session, raw_fort):
 
     if (has_fort_name and
             (fort_updated or
-                external_id not in FORT_CACHE.gym_names or
-                FORT_CACHE.gym_names[external_id] == True)):
-        FORT_CACHE.gym_names[external_id] = (raw_fort['name'], raw_fort['url']) 
+                external_id not in FORT_CACHE.gym_info or
+                FORT_CACHE.gym_info[external_id] == True)):
+        FORT_CACHE.gym_info[external_id] = (raw_fort['name'], raw_fort['url'], raw_fort.get('sponsor')) 
     
     if sponsor != FORT_CACHE.sponsors.get(external_id):
         session.query(Fort) \

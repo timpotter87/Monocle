@@ -21,7 +21,7 @@ DB_ENGINE = 'sqlite:///db.sqlite'
 # DB_POOL_RECYCLE = 600
 
 AREA_NAME = 'SLC'     # the city or region you are scanning
-LANGUAGE = 'EN'       # ISO 639-1 codes EN, DE, ES, FR, IT, JA, KO, PT, or ZH for PokÃ©mon/move names
+LANGUAGE = 'EN'       # ISO 639-1 codes EN, DE, ES, FR, IT, JA, KO, PT, or ZH for Pokémon/move names
 MAX_CAPTCHAS = 100    # stop launching new visits if this many CAPTCHAs are pending
 SCAN_DELAY = 10       # wait at least this many seconds before scanning with the same account
 SPEED_UNIT = 'miles'  # valid options are 'miles', 'kilometers', 'meters'
@@ -48,10 +48,6 @@ GRID = (4, 4)  # rows, columns
 #
 ### For example, if you want to have 5% level 30 acccounts for encounter, set
 #LV30_PERCENT_OF_WORKERS = 0.05
-
-### This will use 7 level 30, adjust to your needs
-#LV30_PERCENT_OF_WORKERS = float(7 / (GRID[0] * GRID[1]) - 0.001) 
-
 #
 ### Delay in seconds before starting next encounter.
 ### This allows adjustment of overall encounter rate (to make it slower).
@@ -69,13 +65,14 @@ GRID = (4, 4)  # rows, columns
 ### Do GMO requests for lv30 accounts.
 ### Setting False will increase encounter rate and reduce hashing usage as it will apply insta-teleport encounter.
 ### Setting True will reduce account ban risks as it will apply normal Monocle behavior.
-### Default False.
-#LV30_GMO = False
+### Default True.
+#LV30_GMO = True
 
 ### Maximum speed for lv30 accounts in SPEED_UNIT/hr.
-### Default is 0.0 to disable.
+### Defaults to 745.6454 miles/hr (1200 km/hr) hypothetical hyperloop speed.
+### Set it to 0.0 to disable.
 ### When disabled, worker will not take any traveling time to encounter. (insta-teleport activated!)
-#LV30_MAX_SPEED = 0.0
+#LV30_MAX_SPEED = 745.6454
 
 ### If encounter jobs queue up more than this amount, new sightings will be saved without encounter.
 ### Defaults to 0, which means no max limit.
@@ -103,13 +100,13 @@ SKIP_SPAWN = 1500      # don't even try to find a worker for a spawn if the spaw
 # this will reduce the grouping of workers around the last few mysteries
 #RESCAN_UNKNOWN = 90
 
-### Import Accounts directly into your database with
-### 'python3 scripts/import_accounts.py account.csv' for level 30 Accounts add '--level 30'
 # filename of accounts CSV
-#ACCOUNTS_CSV = 'accounts.csv'
+# If a CSV file is specified, this file will be processed on each start.
+# If not set, you will have to import manually your accounts with scripts/import_accounts.py script.
+# ACCOUNTS_CSV = None
 
 ### Swap out accounts on warning popup
-#ACCOUNTS_SWAP_OUT_ON_WARN = False
+#ACCOUNTS_SWAP_OUT_ON_WARN = True
 #
 ### Set period (days) for account hibernations for each swap out category.
 ### Only those categories defined here will be swapped in. The rest will not attempt to swapin.
@@ -170,7 +167,7 @@ SEARCH_SLEEP = 2.5
 ### Gohash endpoint 
 #GOHASH_ENDPOINT="http://hash.gomanager.biz"
 
-# Skip PokÃ©Stop spinning and egg incubation if your request rate is too high
+# Skip PokéStop spinning and egg incubation if your request rate is too high
 # for your hashing subscription.
 # e.g.
 #   75/150 hashes available 35/60 seconds passed => fine
@@ -178,7 +175,7 @@ SEARCH_SLEEP = 2.5
 # value: how many requests to keep as spare (0.1 = 10%), False to disable
 #SMART_THROTTLE = False
 
-# Swap the worker that has seen the fewest PokÃ©mon every x seconds
+# Swap the worker that has seen the fewest Pokémon every x seconds
 # Defaults to whatever will allow every worker to be swapped within 6 hours
 #SWAP_OLDEST = 300  # 5 minutes
 # Only swap if it's been active for more than x minutes
@@ -189,17 +186,17 @@ APP_SIMULATION = True     # mimic the actual app's login requests
 COMPLETE_TUTORIAL = True  # complete the tutorial process and configure avatar for all accounts that haven't yet
 INCUBATE_EGGS = True      # incubate eggs if available
 
-## encounter PokÃ©mon to store IVs.
+## encounter Pokémon to store IVs.
 ## valid options:
-# 'all' will encounter every PokÃ©mon that hasn't been already been encountered
-# 'some' will encounter PokÃ©mon if they are in ENCOUNTER_IDS or eligible for notification
-# None will never encounter PokÃ©mon
+# 'all' will encounter every Pokémon that hasn't been already been encountered
+# 'some' will encounter Pokémon if they are in ENCOUNTER_IDS or eligible for notification
+# None will never encounter Pokémon
 ENCOUNTER = None
 #ENCOUNTER_IDS = (3, 6, 9, 45, 62, 71, 80, 85, 87, 89, 91, 94, 114, 130, 131, 134)
 
-# PokÃ©Stops
-SPIN_POKESTOPS = True  # spin all PokÃ©Stops that are within range
-SPIN_COOLDOWN = 300    # spin only one PokÃ©Stop every n seconds (default 300)
+# PokéStops
+SPIN_POKESTOPS = True  # spin all PokéStops that are within range
+SPIN_COOLDOWN = 300    # spin only one PokéStop every n seconds (default 300)
 
 ## Gyms
 
@@ -214,7 +211,7 @@ SPIN_COOLDOWN = 300    # spin only one PokÃ©Stop every n seconds (default 300)
 # bag cleaning is disabled if this is not present or is commented out
 ''' # triple quotes are comments, remove them to use this ITEM_LIMITS example
 ITEM_LIMITS = {
-    1:    0,  # PokÃ© Ball
+    1:    0,  # Poké Ball
     2:    0,  # Great Ball
     3:    5,  # Ultra Ball
     4:    10,  # Master Ball
@@ -256,7 +253,7 @@ LOGIN_TIMEOUT = 2.5
 # Set to True to kill the scanner when a newer version is forced
 #FORCED_KILL = False
 
-### Exclude these PokÃ©mon from the map by default (only visible in trash layer) 
+### Exclude these Pokémon from the map by default (only visible in trash layer) 
 ### DB insert is not affected. The will still be inserted to DB as normal. See NO_DB_INSERT_IDS config below.
 TRASH_IDS = (
     16, 19, 21, 29, 32, 41, 46, 48, 50, 52, 56, 74, 77, 96, 111, 133,
@@ -270,7 +267,7 @@ TRASH_IDS = (
 ### To set it the same as TRASH_IDS do the following.
 #NO_DB_INSERT_IDS = TRASH_IDS
 
-# include these PokÃ©mon on the "rare" report
+# include these Pokémon on the "rare" report
 RARE_IDS = (3, 6, 9, 45, 62, 71, 80, 85, 87, 89, 91, 94, 114, 130, 131, 134)
 
 from datetime import datetime
@@ -358,7 +355,7 @@ NOTIFY = False  # enable notifications
 # notify gyms data updates to webhooks
 #NOTIFY_GYMS_WEBHOOK = False
 
-# create images with PokÃ©mon image and optionally include IVs and moves
+# create images with Pokémon image and optionally include IVs and moves
 # requires cairo and ENCOUNTER = 'notifying' or 'all'
 TWEET_IMAGES = True
 # IVs and moves are now dependant on level, so this is probably not useful
@@ -369,15 +366,15 @@ IMAGE_STATS = False
 HASHTAGS = {AREA_NAME, 'Monocle', 'PokemonGO'}
 #TZ_OFFSET = 0  # UTC offset in hours (if different from system time)
 
-# the required number of seconds remaining to notify about a PokÃ©mon
+# the required number of seconds remaining to notify about a Pokémon
 TIME_REQUIRED = 600  # 10 minutes
 
 ### Only set either the NOTIFY_RANKING or NOTIFY_IDS, not both!
-# The (x) rarest PokÃ©mon will be eligible for notification. Whether a
+# The (x) rarest Pokémon will be eligible for notification. Whether a
 # notification is sent or not depends on its score, as explained below.
 NOTIFY_RANKING = 90
 
-# PokÃ©mon to potentially notify about, in order of preference.
+# Pokémon to potentially notify about, in order of preference.
 # The first in the list will have a rarity score of 1, the last will be 0.
 #NOTIFY_IDS = (130, 89, 131, 3, 9, 134, 62, 94, 91, 87, 71, 45, 85, 114, 80, 6)
 
@@ -385,10 +382,10 @@ NOTIFY_RANKING = 90
 # (ignored if using NOTIFY_IDS instead of NOTIFY_RANKING)
 ALWAYS_NOTIFY = 14
 
-# Always notify about the following PokÃ©mon even if their time remaining or scores are not high enough
+# Always notify about the following Pokémon even if their time remaining or scores are not high enough
 #ALWAYS_NOTIFY_IDS = {89, 130, 144, 145, 146, 150, 151}
 
-# Never notify about the following PokÃ©mon, even if they would otherwise be eligible
+# Never notify about the following Pokémon, even if they would otherwise be eligible
 #NEVER_NOTIFY_IDS = TRASH_IDS
 
 
@@ -402,40 +399,78 @@ ALWAYS_NOTIFY = 14
 ## infront of the DEFAULT_ALARM lines
 #######################################################
 
+#######################
+# ICON SPRITES
+#
 # copyright safe icons:
 #ICONS_URL = "https://raw.githubusercontent.com/M4d40/my-po-icons/master/Copyrightfree-Assets/{}.png"
+#EGG_ICONS_URL = "https://raw.githubusercontent.com/M4d40/my-po-icons/master/Copyrightfree-Assets/egg_{}.png"
 #GMAP_ICONS_URL = "https://raw.githubusercontent.com/M4d40/my-po-icons/master/Copyrightfree-Assets-32x32/{}.png"
 #GMAP_EGG_ICONS_URL = "https://raw.githubusercontent.com/M4d40/my-po-icons/master/Copyrightfree-Assets-32x32/egg_{}.png"
-
+#
 # non copyright safe icons:
-#ICONS_URL = "https://raw.githubusercontent.com/M4d40/my-po-icons/master/Original-Assets/{}.png"
-#GMAP_ICONS_URL = "https://raw.githubusercontent.com/M4d40/my-po-icons/master/Original-Assets-32x32/{}.png"
-#GMAP_EGG_ICONS_URL = "https://raw.githubusercontent.com/M4d40/my-po-icons/master/Original-Assets-32x32/egg_{}.png"
+ICONS_URL = "https://raw.githubusercontent.com/M4d40/my-po-icons/master/Original-Assets/{}.png"
+EGG_ICONS_URL = "https://raw.githubusercontent.com/M4d40/my-po-icons/master/Original-Assets/egg_{}.png"
+GMAP_ICONS_URL = "https://raw.githubusercontent.com/M4d40/my-po-icons/master/Original-Assets-32x32/{}.png"
+GMAP_EGG_ICONS_URL = "https://raw.githubusercontent.com/M4d40/my-po-icons/master/Original-Assets-32x32/egg_{}.png"
+
+# Available keywords for poke alarms:
+###############################
+# address, latitude, longitude, poke_id, poke_name,
+# weather_boosted, gmap_link, applemap_link,
+# disappear_time_12, disappear_time_24, time_left,
+# poke_iv, poke_form, poke_gender, poke_height, poke_weight,
+# poke_move_1, poke_move_2, poke_lvl, poke_cp,
+# poke_atk, poke_def, poke_sta
+# address takes a lot of google maps api calls!
+#
+# Available Filter:
+#
+# 'filter_ids': [1,2,3,4,5,6,8,9,246,247,248],
+# 'filter_ivs': {'value': 95, 'op': '>=', 'ignore_unknown': True},
+# Both can be added within one alarm
+#
+# Available iv filter operators: '>','>=','<','<=','=='
+
+WEATHER_STATUS = {
+    0: "Not boosted",
+    1: "Clear",
+    2: "Rainy",
+    3: "Partly Cloudy",
+    4: "Overcast",
+    5: "Windy",
+    6: "Snow",
+    7: "Fog"
+}
 
 
 #DEFAULT_ALARM = {
 #            'username': '{poke_name}',
-#            'title': 'A wild {poke_name} {poke_iv}% (lvl {poke_lvl} | {poke_cp}WP) ({poke_atk}/{poke_def}/{poke_sta}) appeared',
-#            'description': """Until {disappear_time} ({time_left} left)
+#            'title': 'A wild {poke_name} {poke_iv}% (lvl {poke_lvl} | {poke_cp}CP) ({poke_atk}/{poke_def}/{poke_sta}) appeared',
+#            'description': """Until {disappear_time_24} ({time_left} left)
 #IV: {poke_iv}% ({poke_atk}/{poke_def}/{poke_sta})
 #CP: {poke_cp}  |  Level: {poke_lvl}
 #Attacks: {poke_move_1} / {poke_move_2}
-#Gender: {poke_gender} | Weight: {poke_weight} kg | Height: {poke_height} m""",
+#Gender: {poke_gender} | Weight: {poke_weight} kg | Height: {poke_height} m
+#Google Maps Link: {gmap_link},
+#Apple Maps Link: {applemap_link}""",
 #            'color': 'BLUE', # RED/AQUA/GREEN/BLUE/GOLD/ORANGE/RED/GREY/NAVY
 #            'avatar_url': ICONS_URL,
+#            'thumbnail_url': ICONS_URL,
 #            'icon_url': ICONS_URL
 #}
 
-#NOTIFY_POKEMON_ALARMS = {
+#POKEMON_ALARMS = {
 #    'discord': [
 #        {
 #            'name': 'filter pokemon ids',
-#            'title': 'A wild {poke_name} {poke_iv}% (lvl {poke_lvl} | {poke_cp}WP) ({poke_atk}/{poke_def}/{poke_sta}) appeared',
-#            'description': """Until {disappear_time} ({time_left} left)""",
+#            'title': 'A wild {poke_name} {poke_iv}% (lvl {poke_lvl} | {poke_cp}CP) ({poke_atk}/{poke_def}/{poke_sta}) appeared',
+#            'description': """Until {disappear_time_24} ({time_left} left)""",
 #            'filter_ids': [1,2,3,4,5,6,8,9,246,247,248],
 #            'webhook_url': 'YOUR DISCORDCHANNEL WEBHOOK',
 #            'avatar_url': ICONS_URL,
-#            'icon_url': ICONS_URL
+#            'thumbnail_url': ICONS_URL,
+#            'mention': '12345678901234' # User ID
 #        },
 #        {
 #            'name': 'filter pokemon ivs',
@@ -445,7 +480,7 @@ ALWAYS_NOTIFY = 14
 #        },
 #        {
 #            'name': 'combined filter ivs and ids',
-#            'username': 'iv-95-bot',
+#            'username': 'id-iv-95-combo-bot',
 #            'filter_ids': [1,2,3,4,5,6,8,9,246,247,248],
 #            'filter_ivs': {'value': 95, 'op': '>=', 'ignore_unknown': True},
 #            'webhook_url': 'YOUR DISCORDCHANNEL WEBHOOK',
@@ -456,7 +491,7 @@ ALWAYS_NOTIFY = 14
 
 
 
-# Override the rarity score for particular PokÃ©mon
+# Override the rarity score for particular Pokémon
 # format is: {pokemon_id: rarity_score}
 #RARITY_OVERRIDE = {148: 0.6, 149: 0.9}
 
@@ -466,10 +501,10 @@ ALWAYS_NOTIFY = 14
 # Ignore rarity score and only base decision on IV score
 #IGNORE_RARITY = False
 
-# The PokÃ©mon score required to notify goes on a sliding scale from INITIAL_SCORE
+# The Pokémon score required to notify goes on a sliding scale from INITIAL_SCORE
 # to MINIMUM_SCORE over the course of FULL_TIME seconds following a notification
-# PokÃ©mon scores are an average of the PokÃ©mon's rarity score and IV score (from 0 to 1)
-# If NOTIFY_RANKING is 90, the 90th most common PokÃ©mon will have a rarity of score 0, the rarest will be 1.
+# Pokémon scores are an average of the Pokémon's rarity score and IV score (from 0 to 1)
+# If NOTIFY_RANKING is 90, the 90th most common Pokémon will have a rarity of score 0, the rarest will be 1.
 # IV score is the IV sum divided by 45 (perfect IVs).
 FULL_TIME = 1800  # the number of seconds after a notification when only MINIMUM_SCORE will be required
 INITIAL_SCORE = 0.7  # the required score immediately after a notification
@@ -500,35 +535,91 @@ MINIMUM_SCORE = 0.4  # the required score after FULL_TIME seconds have passed
 #TELEGRAM_CHAT_ID = '@your_channel'
 #TELEGRAM_MESSAGE_TYPE = 0
 
-### The following raid notification related configs
-### only apply to Monkey's version of raids notification (no webhook support, only Telegram and Discord)
-### For webhook raids notification, see below for NOTIFY_RAIDS_WEBHOOK
-###
+## The following raid notification related configs
+## only apply to Monkey's version of raids notification (no webhook support, only Telegram and Discord)
+## For webhook raids notification, see below for NOTIFY_RAIDS_WEBHOOK
+##
+## Available keywords for egg/raid alarms:
+###########################################
+## gym_name, gym_pic, team, level,
+## address, gmap_link, applemap_link,
+## poke_id, poke_name, move_1, move_2,
+## time_battle_12, time_battle_24,
+## raid_end_12, raid_end_24
+##
+#####################################
+## Available alarm level operators:
+## '>','>=','<','<=','=='
+##
+#NOTIFY_EGGS = False # Enable egg notifications. Default False
 #NOTIFY_RAIDS = False # Enable raid notifications. Default False
-#RAIDS_LVL_MIN = 1
-#RAIDS_IDS = {143, 248}
+#TELEGRAM_RAIDS_LVL_MIN = 1
+#TELEGRAM_RAIDS_IDS = {143, 248}
+
+#TEAM = {
+#    0: "No Team",
+#    1: "Mystic (blue)",
+#    2: "Valor (red)",
+#    3: "Instinct (yellow)"
+#}
 
 #DEFAULT_EGG_ALARM = {
+#            'type': 'egg',
 #            'username': 'Egg Bot',
-#            'title': 'A Level {level} Egg appeared',
-#            'description': """It hatches at {time_battle}
-#Raid ends at: {raid_end}""",
+#            'title': "A Level {level} Egg appeared",
+#            'description': """Gym: {gym_name}
+#It hatches at: {time_battle_24}
+#Controlled by: {team}
+#Raid ends at: {raid_end_24}""",
+#            'level': {'value': 1, 'op': '>='},
 #            'color': 'GREY', # RED/AQUA/GREEN/BLUE/GOLD/ORANGE/RED/GREY/NAVY
-#            'webhook_url': 'https://discordapp.com/api/webhooks/xxxxxxxxxxxxx/xxxxxxxxxxxxxxx'
+#            'thumbnail_url': "{gym_pic}",
+#            'avatar_url': EGG_ICONS_URL,
+#            'gmap_icon_url': GMAP_EGG_ICONS_URL,
+#            'webhook_url': "https://discordapp.com/api/webhooks/xxxxxxxxxxxxx/xxxxxxxxxxxxxxx"
 #}
 
 #DEFAULT_RAID_ALARM = {
+#            'type': 'raid',
 #            'username': 'Raid Bot',
-#            'title': 'A {poke_name} Raid (Level {level}) hetched',
+#            'title': 'A {poke_name} Raid (Level {level}) hatched',
 #            'description': """Gym: {gym_name}
-#Until: {raid_end}
-#controlled by: **Team {team}**
+#Until: {raid_end_24}
+#Controlled by: **Team {team}**
 #Pokemon: **{poke_name}**
-#Attacks: **{move_1}** / **{move_2}**
-#Gym-pic: {gym_pic}""",
+#Attacks: **{move_1}** / **{move_2}**""",
+#            'level': {'value': 1, 'op': '>='},
 #            'color': 'BLUE', # RED/AQUA/GREEN/BLUE/GOLD/ORANGE/RED/GREY/NAVY
+#            'thumbnail_url': "{gym_pic}",
+#            'avatar_url': ICONS_URL,
+#            'gmap_icon_url': GMAP_ICONS_URL,
 #            'webhook_url': 'https://discordapp.com/api/webhooks/xxxxxxxxxxxxx/xxxxxxxxxxxxxxx'
 #}
+
+#RAID_ALARMS = {
+#    'discord': [
+#        {
+#            'type': 'egg',
+#            'level': {'value': 4, 'op': '>='},
+#            'username': 'Eggs lvl4 and higher Bot',
+#            'color': 'GREY', # RED/AQUA/GREEN/BLUE/GOLD/ORANGE/RED/GREY/NAVY
+#            'webhook_url': 'https://discordapp.com/api/webhooks/xxxxxxxxx/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+#        },
+#        {
+#            'type': 'egg',
+#            'level': {'value': 1, 'op': '=='},
+#            'username': 'LVL 1 Egg Bot',
+#            'webhook_url': 'https://discordapp.com/api/webhooks/xxxxxxxxx/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+#        },
+#        {
+#            'type': 'raid',
+#            'level': {'value': 1, 'op': '=='},
+#            'username': 'LVL 1 Raid Bot',
+#            'webhook_url': 'https://discordapp.com/api/webhooks/xxxxxxxxx/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+#        }
+#    ]
+#}
+
 
 #TELEGRAM_RAIDS_CHAT_ID = '@your_channel'
 
@@ -574,7 +665,7 @@ MINIMUM_SCORE = 0.4  # the required score after FULL_TIME seconds have passed
 #from monocle.landmarks import Landmarks
 #LANDMARKS = Landmarks(query_suffix=AREA_NAME)
 
-# Landmarks to reference when PokÃ©mon are nearby
+# Landmarks to reference when Pokémon are nearby
 # If no points are specified then it will query OpenStreetMap for the coordinates
 # If 1 point is provided then it will use those coordinates but not create a shape
 # If 2 points are provided it will create a rectangle with its corners at those points
@@ -606,7 +697,7 @@ MINIMUM_SCORE = 0.4  # the required score after FULL_TIME seconds have passed
 
 ### Shadown ban module
 #SB_DETECTOR = False
-#SB_COMMON_POKEMON_IDS = (16,19,23,27,29,32,41,43,46,52,54,60,69,72,74,77,81,98,118,120,129,161,165,167,177,183,187,191,194,198,209,218)
+#SB_COMMON_POKEMON_IDS = (16,19,23,27,29,32,43,46,52,54,60,69,77,81,98,118,120,129,177,183,187,191,194,209,218,320,325,339)
 #SB_MAX_ENC_MISS = 3           # Number of encounter misses before account is marked as sbanned
 #SB_MIN_SIGHTING_COUNT = 30    # Minimum sightings required to flag SB
 #SB_QUARANTINE_VISITS = 12     # Number of mininum visits needed to check if an account has seen any uncommon
